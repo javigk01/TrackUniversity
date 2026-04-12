@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using TrackUniversity.Data;
 using TrackUniversity.Models;
 using TrackUniversity.Services;
+using Route = TrackUniversity.Models.Route;
 
 var builder = WebApplication.CreateBuilder(args);
 

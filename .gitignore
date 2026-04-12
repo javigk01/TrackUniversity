@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+.astro/
+
+# .NET
+bin/
+obj/
+**/bin/
+**/obj/
+*.user
+*.suo
+.vs/
+
+# Python
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+
+# Environment variables
+.env
+**/.env
+!**/.env.example
+
+# Docker volumes / data
+mosquitto/data/
+mosquitto/log/
+mysql-data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
