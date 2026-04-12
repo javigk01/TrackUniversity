@@ -12,45 +12,91 @@ public class BusController : ControllerBase
 
     public BusController(AppDbContext db) => _db = db;
 
-    /// <summary>Devuelve todos los buses con su posición más reciente.</summary>
+    /// <summary>Devuelve todos los buses con información completa y posición actual.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAllBuses()
     {
         var buses = await _db.Buses
+            .Include(b => b.Route)
             .Select(b => new
             {
                 b.Id,
                 b.Name,
-                b.Route,
+                b.Plate,
+                b.Capacity,
                 b.LastLatitude,
                 b.LastLongitude,
+                b.LastSpeed,
                 b.LastUpdated,
+                Route = new
+                {
+                    b.Route.Id,
+                    b.Route.Name,
+                    b.Route.RouteCode,
+                    b.Route.Origin,
+                    b.Route.Destination,
+                    b.Route.AverageTimeMinutes,
+                },
             })
             .ToListAsync();
 
         return Ok(buses);
     }
 
-    /// <summary>Devuelve la posición actual de un bus por ID.</summary>
-    [HttpGet("{id:int}/position")]
-    public async Task<IActionResult> GetBusPosition(int id)
+    /// <summary>Devuelve la información completa de un bus por ID.</summary>
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetBus(int id)
     {
         var bus = await _db.Buses
+            .Include(b => b.Route)
             .Where(b => b.Id == id)
             .Select(b => new
             {
                 b.Id,
                 b.Name,
-                b.Route,
+                b.Plate,
+                b.Capacity,
                 b.LastLatitude,
                 b.LastLongitude,
+                b.LastSpeed,
                 b.LastUpdated,
+                Route = new
+                {
+                    b.Route.Id,
+                    b.Route.Name,
+                    b.Route.RouteCode,
+                    b.Route.Origin,
+                    b.Route.Destination,
+                    b.Route.AverageTimeMinutes,
+                },
             })
             .FirstOrDefaultAsync();
 
         if (bus is null) return NotFound(new { message = $"Bus {id} no encontrado." });
 
         return Ok(bus);
+    }
+
+    /// <summary>Devuelve solo la telemetría en tiempo real (lat, lng, velocidad) de un bus.</summary>
+    [HttpGet("{id:int}/position")]
+    public async Task<IActionResult> GetBusPosition(int id)
+    {
+        var position = await _db.Buses
+            .Where(b => b.Id == id)
+            .Select(b => new
+            {
+                b.Id,
+                b.Plate,
+                b.LastLatitude,
+                b.LastLongitude,
+                b.LastSpeed,
+                b.LastUpdated,
+            })
+            .FirstOrDefaultAsync();
+
+        if (position is null) return NotFound(new { message = $"Bus {id} no encontrado." });
+
+        return Ok(position);
     }
 
     /// <summary>Devuelve las últimas N lecturas históricas de un bus (default 50).</summary>
@@ -64,7 +110,7 @@ public class BusController : ControllerBase
             .Where(r => r.BusId == id)
             .OrderByDescending(r => r.Timestamp)
             .Take(limit)
-            .Select(r => new { r.Latitude, r.Longitude, r.Timestamp })
+            .Select(r => new { r.Latitude, r.Longitude, r.Speed, r.Timestamp })
             .ToListAsync();
 
         return Ok(readings);

@@ -55,7 +55,6 @@ services:
       # Broker apunta al servicio 'mosquitto' (nombre de red interno)
       Mqtt__Host: "mosquitto"
       Mqtt__Port: "1883"
-      Mqtt__UseTls: "false"
       Cors__AllowedOrigins__0: "http://localhost:4321"
       ASPNETCORE_ENVIRONMENT: "Production"
     depends_on:
@@ -80,17 +79,34 @@ services:
     depends_on:
       - backend
 
-  # ── 5. Simulador GPS (Python) ────────────────────────────────────────────────
-  simulator:
+  # ── 5. Simulador GPS — Bus TUB-001 (Ruta 1) ────────────────────────────────
+  simulator-ruta1:
     build:
       context: ./simulator
       dockerfile: Dockerfile
-    container_name: trackuniversity-simulator
+    container_name: trackuniversity-simulator-ruta1
     restart: unless-stopped
     environment:
       MQTT_HOST: "mosquitto"
       MQTT_PORT: "1883"
-      MQTT_USE_TLS: "false"
+      BUS_PLATE: "TUB-001"
+      BUS_ROUTE: "ruta1"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
+  # ── 6. Simulador GPS — Bus TUB-002 (Ruta 2) ────────────────────────────────
+  simulator-ruta2:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: trackuniversity-simulator-ruta2
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: "mosquitto"
+      MQTT_PORT: "1883"
+      BUS_PLATE: "TUB-002"
+      BUS_ROUTE: "ruta2"
     depends_on:
       mosquitto:
         condition: service_healthy
