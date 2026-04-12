@@ -37,9 +37,30 @@ const DEFAULT_ZOOM   = 14;
 
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function BusMap() {
-  const [buses,      setBuses]      = useState([]);
-  const [lastUpdate, setLastUpdate] = useState(null);
-  const [error,      setError]      = useState(null);
+  const [buses,        setBuses]        = useState([]);
+  const [routes,       setRoutes]       = useState([]);
+  const [selectedRoute, setSelectedRoute] = useState(null);
+  const [lastUpdate,   setLastUpdate]   = useState(null);
+  const [error,        setError]        = useState(null);
+
+  // Ícono de bus personalizado (bus2.svg)
+  const busSvgIcon = new L.Icon({
+    iconUrl:       '/bus2.svg',
+    iconSize:      [40, 40],
+    iconAnchor:    [20, 40],
+    popupAnchor:   [0, -40],
+  });
+
+  const fetchRoutes = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/routes`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setRoutes(data);
+    } catch (err) {
+      console.error('[BusMap] Error fetching routes:', err);
+    }
+  }, []);
 
   const fetchBuses = useCallback(async () => {
     try {
@@ -55,28 +76,92 @@ export default function BusMap() {
     }
   }, []);
 
+  // Obtener rutas una sola vez
+  useEffect(() => {
+    fetchRoutes();
+  }, [fetchRoutes]);
+
+  // Poll buses cada 5 segundos
   useEffect(() => {
     fetchBuses();
     const id = setInterval(fetchBuses, POLL_INTERVAL);
     return () => clearInterval(id);
   }, [fetchBuses]);
 
-  const activeBuses = buses.filter(b => b.lastLatitude && b.lastLongitude);
+  // Filtrar buses por ruta seleccionada (para el mapa)
+  const filteredBuses = selectedRoute 
+    ? buses.filter(b => b.route?.routeCode === selectedRoute)
+    : buses;
+
+  const activeBuses = filteredBuses.filter(b => b.lastLatitude && b.lastLongitude);
+
+  // Calcular todas las métricas GLOBALES (independiente de filtro de ruta)
+  useEffect(() => {
+    const allActiveBuses = buses.filter(b => b.lastLatitude && b.lastLongitude);
+    const totalActive = allActiveBuses.length;
+    const totalPassengers = allActiveBuses.reduce((sum, bus) => sum + (bus.capacity || 0), 0);
+    const avgSpeed = allActiveBuses.length > 0
+      ? Math.round(allActiveBuses.reduce((sum, bus) => sum + (bus.lastSpeed || 0), 0) / allActiveBuses.length)
+      : 0;
+
+    // Calcular ocupación por ruta
+    const occupancyByRoute = routes.map(route => {
+      const routeBuses = buses.filter(b => b.route?.routeCode === route.routeCode);
+      const activeBuses = routeBuses.filter(b => b.lastLatitude && b.lastLongitude);
+      const totalCapacity = routeBuses.reduce((sum, bus) => sum + (bus.capacity || 0), 0);
+      const activeCapacity = activeBuses.reduce((sum, bus) => sum + (bus.capacity || 0), 0);
+
+      return {
+        routeCode: route.routeCode,
+        routeName: route.name,
+        activeBuses: activeBuses.length,
+        totalBuses: routeBuses.length,
+        occupancyPercent: routeBuses.length > 0 ? (activeCapacity / totalCapacity) * 100 : 0,
+      };
+    });
+
+    // Actualizar elementos del DOM
+    const activeEl = document.getElementById('active-buses');
+    const passengersEl = document.getElementById('total-passengers');
+    const speedEl = document.getElementById('avg-speed');
+    const occupancyEl = document.getElementById('occupancy-data');
+
+    if (activeEl) activeEl.textContent = totalActive;
+    if (passengersEl) passengersEl.textContent = totalPassengers;
+    if (speedEl) speedEl.textContent = avgSpeed;
+    if (occupancyEl) occupancyEl.textContent = JSON.stringify(occupancyByRoute);
+  }, [buses, routes]);
 
   return (
     <div style={{ fontFamily: 'inherit' }}>
 
-      {/* ── Status bar ── */}
+      {/* ── Selector de ruta ── */}
       <div style={{
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        marginBottom: '0.5rem', fontSize: '0.8rem', color: '#718096',
+        marginBottom: '1rem', padding: '0.75rem', background: '#f7fafc',
+        borderRadius: '6px', border: '1px solid #e2e8f0',
       }}>
-        <span>
-          {activeBuses.length > 0
-            ? `${activeBuses.length} bus${activeBuses.length > 1 ? 'es' : ''} activo${activeBuses.length > 1 ? 's' : ''}`
-            : 'Sin posición disponible aún'}
-        </span>
-        {lastUpdate && <span>Última actualización: {lastUpdate}</span>}
+        <label style={{
+          display: 'block', fontSize: '0.85rem', fontWeight: 600,
+          marginBottom: '0.5rem', color: '#2d3748',
+        }}>
+          Selecciona una Ruta ({routes.length} disponibles)
+        </label>
+        <select
+          value={selectedRoute || ''}
+          onChange={(e) => setSelectedRoute(e.target.value || null)}
+          style={{
+            width: '100%', padding: '0.6rem', fontSize: '0.9rem',
+            border: '2px solid #cbd5e0', borderRadius: '6px',
+            backgroundColor: 'white', color: '#2d3748', cursor: 'pointer',
+          }}
+        >
+          <option value="">📍 Ver TODAS las rutas</option>
+          {routes.map((route) => (
+            <option key={route.id} value={route.routeCode}>
+              🚌 {route.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* ── Error banner ── */}
@@ -105,17 +190,19 @@ export default function BusMap() {
           <Marker
             key={bus.id}
             position={[bus.lastLatitude, bus.lastLongitude]}
-            icon={busIcon}
+            icon={busSvgIcon}
           >
             <Popup>
-              <strong style={{ fontSize: '0.9rem' }}>{bus.name}</strong>
+              <strong style={{ fontSize: '0.9rem', color: '#1565C0' }}>{bus.name}</strong>
               <br />
-              <span style={{ fontSize: '0.8rem', color: '#4a5568' }}>Ruta: {bus.route}</span>
+              <span style={{ fontSize: '0.8rem', color: '#4a5568' }}>📍 Placa: {bus.plate}</span>
+              <br />
+              <span style={{ fontSize: '0.8rem', color: '#4a5568' }}>🛣️ Ruta: {bus.route?.routeCode || 'N/A'}</span>
               <br />
               <span style={{ fontSize: '0.75rem', color: '#718096' }}>
                 {bus.lastUpdated
-                  ? `Actualizado: ${new Date(bus.lastUpdated).toLocaleTimeString('es-CO')}`
-                  : 'Sin datos de tiempo'}
+                  ? `🕐 ${new Date(bus.lastUpdated).toLocaleTimeString('es-CO')}`
+                  : 'Sin datos'}
               </span>
             </Popup>
           </Marker>
@@ -126,7 +213,7 @@ export default function BusMap() {
       <div style={{
         marginTop: '0.5rem', fontSize: '0.75rem', color: '#a0aec0', textAlign: 'right',
       }}>
-        Actualización automática cada {POLL_INTERVAL / 1000}s · API: {API_URL}
+        Auto-actualización cada {POLL_INTERVAL / 1000}s · Buses: {buses.length} total
       </div>
     </div>
   );

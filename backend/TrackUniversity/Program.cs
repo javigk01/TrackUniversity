@@ -73,16 +73,101 @@ using (var scope = app.Services.CreateScope())
             },
         };
 
-        db.Routes.AddRange(ruta1, ruta2);
+        var ruta3 = new Route
+        {
+            Name               = "Ruta 3 - Clínica",
+            RouteCode          = "ruta3",
+            Origin             = "Entrada Principal",
+            Destination        = "Clínica Universitaria",
+            AverageTimeMinutes = 20,
+            Stops = new List<RouteStop>
+            {
+                new() { Name = "Entrada Principal", StopOrder = 1, Latitude = 4.6284, Longitude = -74.0641 },
+                new() { Name = "Edificio A",        StopOrder = 2, Latitude = 4.6270, Longitude = -74.0700 },
+                new() { Name = "Clínica Univ",      StopOrder = 3, Latitude = 4.6280, Longitude = -74.0750 },
+            },
+        };
+
+        var ruta4 = new Route
+        {
+            Name               = "Ruta 4 - Deportes",
+            RouteCode          = "ruta4",
+            Origin             = "Entrada Principal",
+            Destination        = "Centro Deportivo",
+            AverageTimeMinutes = 30,
+            Stops = new List<RouteStop>
+            {
+                new() { Name = "Entrada Principal",  StopOrder = 1, Latitude = 4.6284, Longitude = -74.0641 },
+                new() { Name = "Cafetería",          StopOrder = 2, Latitude = 4.6300, Longitude = -74.0600 },
+                new() { Name = "Centro Deportivo",   StopOrder = 3, Latitude = 4.6200, Longitude = -74.0550 },
+            },
+        };
+
+        var ruta5 = new Route
+        {
+            Name               = "Ruta 5 - Laboratorios",
+            RouteCode          = "ruta5",
+            Origin             = "Entrada Sur",
+            Destination        = "Bloque Laboratorios",
+            AverageTimeMinutes = 15,
+            Stops = new List<RouteStop>
+            {
+                new() { Name = "Entrada Sur",         StopOrder = 1, Latitude = 4.6150, Longitude = -74.0700 },
+                new() { Name = "Bloque Laboratorios", StopOrder = 2, Latitude = 4.6180, Longitude = -74.0680 },
+            },
+        };
+
+        var ruta6 = new Route
+        {
+            Name               = "Ruta 6 - Estacionamiento",
+            RouteCode          = "ruta6",
+            Origin             = "Estacionamiento A",
+            Destination        = "Entrada Principal",
+            AverageTimeMinutes = 10,
+            Stops = new List<RouteStop>
+            {
+                new() { Name = "Estacionamiento A", StopOrder = 1, Latitude = 4.6350, Longitude = -74.0500 },
+                new() { Name = "Entrada Principal", StopOrder = 2, Latitude = 4.6284, Longitude = -74.0641 },
+            },
+        };
+
+        db.Routes.AddRange(ruta1, ruta2, ruta3, ruta4, ruta5, ruta6);
         db.SaveChanges();
 
         db.Buses.AddRange(
-            new Bus { Name = "Bus Azul Ruta 1",  Plate = "TUB-001", Capacity = 40, RouteId = ruta1.Id },
-            new Bus { Name = "Bus Verde Ruta 2", Plate = "TUB-002", Capacity = 35, RouteId = ruta2.Id }
+            // Ruta 1 - Campus Norte (4 buses)
+            new Bus { Name = "Bus Azul Ruta 1 - 01",   Plate = "TUB-001", Capacity = 40, RouteId = ruta1.Id },
+            new Bus { Name = "Bus Azul Ruta 1 - 02",   Plate = "TUB-003", Capacity = 40, RouteId = ruta1.Id },
+            new Bus { Name = "Bus Azul Ruta 1 - 03",   Plate = "TUB-004", Capacity = 45, RouteId = ruta1.Id },
+            new Bus { Name = "Bus Azul Ruta 1 - 04",   Plate = "TUB-005", Capacity = 40, RouteId = ruta1.Id },
+            
+            // Ruta 2 - Campus Sur (4 buses)
+            new Bus { Name = "Bus Verde Ruta 2 - 01",  Plate = "TUB-002", Capacity = 35, RouteId = ruta2.Id },
+            new Bus { Name = "Bus Verde Ruta 2 - 02",  Plate = "TUB-006", Capacity = 35, RouteId = ruta2.Id },
+            new Bus { Name = "Bus Verde Ruta 2 - 03",  Plate = "TUB-007", Capacity = 40, RouteId = ruta2.Id },
+            new Bus { Name = "Bus Verde Ruta 2 - 04",  Plate = "TUB-008", Capacity = 35, RouteId = ruta2.Id },
+            
+            // Ruta 3 - Clínica (3 buses)
+            new Bus { Name = "Bus Rojo Ruta 3 - 01",   Plate = "TUB-009", Capacity = 30, RouteId = ruta3.Id },
+            new Bus { Name = "Bus Rojo Ruta 3 - 02",   Plate = "TUB-010", Capacity = 30, RouteId = ruta3.Id },
+            new Bus { Name = "Bus Rojo Ruta 3 - 03",   Plate = "TUB-011", Capacity = 30, RouteId = ruta3.Id },
+            
+            // Ruta 4 - Deportes (3 buses)
+            new Bus { Name = "Bus Amarillo Ruta 4 - 01", Plate = "TUB-012", Capacity = 35, RouteId = ruta4.Id },
+            new Bus { Name = "Bus Amarillo Ruta 4 - 02", Plate = "TUB-013", Capacity = 35, RouteId = ruta4.Id },
+            new Bus { Name = "Bus Amarillo Ruta 4 - 03", Plate = "TUB-014", Capacity = 40, RouteId = ruta4.Id },
+            
+            // Ruta 5 - Laboratorios (2 buses)
+            new Bus { Name = "Bus Naranja Ruta 5 - 01", Plate = "TUB-015", Capacity = 25, RouteId = ruta5.Id },
+            new Bus { Name = "Bus Naranja Ruta 5 - 02", Plate = "TUB-016", Capacity = 25, RouteId = ruta5.Id },
+            
+            // Ruta 6 - Estacionamiento (2 buses)
+            new Bus { Name = "Bus Morado Ruta 6 - 01", Plate = "TUB-017", Capacity = 30, RouteId = ruta6.Id },
+            new Bus { Name = "Bus Morado Ruta 6 - 02", Plate = "TUB-018", Capacity = 30, RouteId = ruta6.Id }
         );
         db.SaveChanges();
 
-        app.Logger.LogInformation("Datos semilla insertados: 2 rutas, 9 paradas, 2 buses.");
+        app.Logger.LogInformation("Datos semilla insertados: 6 rutas, 18 buses.");
     }
 }
 

@@ -36,22 +36,86 @@ PUBLISH_INTERVAL = 5  # segundos
 ROUTES: dict[str, list[dict]] = {
     "ruta1": [
         {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal
-        {"lat": 4.6301, "lng": -74.0660},  # Biblioteca Central
-        {"lat": 4.6325, "lng": -74.0672},  # Parada Norte
+        {"lat": 4.6290, "lng": -74.0630},  # Av. Carrera 7
+        {"lat": 4.6301, "lng": -74.0620},  # Cruce
+        {"lat": 4.6310, "lng": -74.0610},  # Biblioteca Central
+        {"lat": 4.6320, "lng": -74.0615},  # Parada norte
+        {"lat": 4.6325, "lng": -74.0672},  # Biblioteca
+        {"lat": 4.6335, "lng": -74.0680},  # Edificio
         {"lat": 4.6348, "lng": -74.0658},  # Cruce Intermedio
-        {"lat": 4.6361, "lng": -74.0630},  # Terminal Norte
-        {"lat": 4.6340, "lng": -74.0605},  # Retorno
-        {"lat": 4.6310, "lng": -74.0610},  # Biblioteca (vuelta)
+        {"lat": 4.6355, "lng": -74.0640},  # Terminal Norte
+        {"lat": 4.6361, "lng": -74.0630},  # Parada sud-este
+        {"lat": 4.6350, "lng": -74.0620},  # Retorno
+        {"lat": 4.6340, "lng": -74.0605},  # Regresar
+        {"lat": 4.6320, "lng": -74.0612},  # Biblioteca (retorno)
+        {"lat": 4.6310, "lng": -74.0620},  # Av. Carrera 7 (retorno)
+        {"lat": 4.6295, "lng": -74.0635},  # Entrada (casi)
         {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal (cierre)
     ],
     "ruta2": [
         {"lat": 4.6100, "lng": -74.1100},  # Campus Sur
-        {"lat": 4.6120, "lng": -74.1080},  # Cafetería
-        {"lat": 4.6200, "lng": -74.1050},  # Kennedy
+        {"lat": 4.6110, "lng": -74.1110},  # Av. Sur
+        {"lat": 4.6120, "lng": -74.1090},  # Cafetería
+        {"lat": 4.6135, "lng": -74.1070},  # Parada
+        {"lat": 4.6160, "lng": -74.1050},  # Cruce
+        {"lat": 4.6185, "lng": -74.1040},  # Kennedy
+        {"lat": 4.6200, "lng": -74.1050},  # Parada Kennedy
+        {"lat": 4.6220, "lng": -74.1200},  # Camino
+        {"lat": 4.6240, "lng": -74.1600},  # Intermedio
         {"lat": 4.6250, "lng": -74.1800},  # Bosa Terminal
-        {"lat": 4.6200, "lng": -74.1050},  # Kennedy (vuelta)
-        {"lat": 4.6120, "lng": -74.1080},  # Cafetería (vuelta)
+        {"lat": 4.6240, "lng": -74.1600},  # Intermedio (retorno)
+        {"lat": 4.6220, "lng": -74.1200},  # Camino (retorno)
+        {"lat": 4.6200, "lng": -74.1050},  # Kennedy (retorno)
+        {"lat": 4.6160, "lng": -74.1050},  # Cruce (retorno)
+        {"lat": 4.6135, "lng": -74.1080},  # Parada (retorno)
+        {"lat": 4.6110, "lng": -74.1100},  # Campus Sur (casi)
         {"lat": 4.6100, "lng": -74.1100},  # Campus Sur (cierre)
+    ],
+    "ruta3": [
+        {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal
+        {"lat": 4.6270, "lng": -74.0650},  # Av. Sur
+        {"lat": 4.6260, "lng": -74.0690},  # Edificio A
+        {"lat": 4.6270, "lng": -74.0720},  # Parada A
+        {"lat": 4.6280, "lng": -74.0750},  # Clínica Universitaria
+        {"lat": 4.6290, "lng": -74.0740},  # Parada Clínica
+        {"lat": 4.6280, "lng": -74.0720},  # Regreso
+        {"lat": 4.6270, "lng": -74.0690},  # Edificio A (retorno)
+        {"lat": 4.6280, "lng": -74.0650},  # Retorno
+        {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal (cierre)
+    ],
+    "ruta4": [
+        {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal
+        {"lat": 4.6290, "lng": -74.0600},  # Av. Principal
+        {"lat": 4.6295, "lng": -74.0570},  # Parada
+        {"lat": 4.6300, "lng": -74.0600},  # Cafetería
+        {"lat": 4.6310, "lng": -74.0580},  # Parada Cafetería
+        {"lat": 4.6200, "lng": -74.0550},  # Centro Deportivo
+        {"lat": 4.6190, "lng": -74.0560},  # Parada Deportivo
+        {"lat": 4.6240, "lng": -74.0580},  # Retorno
+        {"lat": 4.6295, "lng": -74.0570},  # Parada (retorno)
+        {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal (cierre)
+    ],
+    "ruta5": [
+        {"lat": 4.6150, "lng": -74.0700},  # Entrada Sur
+        {"lat": 4.6165, "lng": -74.0690},  # Av. Sur
+        {"lat": 4.6175, "lng": -74.0685},  # Parada
+        {"lat": 4.6180, "lng": -74.0680},  # Bloque Laboratorios
+        {"lat": 4.6185, "lng": -74.0675},  # Parada Labs
+        {"lat": 4.6175, "lng": -74.0685},  # Retorno
+        {"lat": 4.6160, "lng": -74.0695},  # Regreso
+        {"lat": 4.6150, "lng": -74.0700},  # Entrada Sur (cierre)
+    ],
+    "ruta6": [
+        {"lat": 4.6350, "lng": -74.0500},  # Estacionamiento A
+        {"lat": 4.6340, "lng": -74.0520},  # Av. Estacionamiento
+        {"lat": 4.6320, "lng": -74.0560},  # Parada
+        {"lat": 4.6300, "lng": -74.0600},  # Intermedio
+        {"lat": 4.6290, "lng": -74.0620},  # Av. Entrada
+        {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal
+        {"lat": 4.6295, "lng": -74.0620},  # Retorno
+        {"lat": 4.6310, "lng": -74.0580},  # Intermedio (retorno)
+        {"lat": 4.6330, "lng": -74.0540},  # Parada (retorno)
+        {"lat": 4.6350, "lng": -74.0500},  # Estacionamiento A (cierre)
     ],
 }
 

@@ -1,29 +1,6 @@
 ---
-// ── Isla interactiva: sólo el mapa se hidrata en el cliente ──────────────────
 import BusMap from '../components/BusMap.jsx';
-
-// ── Contenido estático: compilado en build time, sin JS extra ────────────────
-const routes = [
-  {
-    id: 1,
-    name: 'Ruta 1',
-    schedule: '6:00 AM – 10:00 PM',
-    stops: ['Entrada Principal', 'Biblioteca Central', 'Zona Rosa', 'Chapinero'],
-    color: '#1565C0',
-  },
-  {
-    id: 2,
-    name: 'Ruta 2',
-    schedule: '7:00 AM – 9:00 PM',
-    stops: ['Campus Sur', 'Cafetería', 'Kennedy', 'Bosa Terminal'],
-    color: '#0277BD',
-  },
-];
-
-const announcements = [
-  { date: '12 Apr', text: 'El Bus Ruta 1 saldrá con 10 min de retraso el viernes.' },
-  { date: '10 Apr', text: 'Nuevo paradero habilitado frente a la biblioteca.' },
-];
+import RouteOccupancy from '../components/RouteOccupancy.jsx';
 ---
 
 <!DOCTYPE html>
@@ -31,185 +8,615 @@ const announcements = [
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Monitoreo en tiempo real del transporte universitario" />
-    <title>TrackUniversity · Transporte</title>
+    <meta name="description" content="Monitoreo de transporte universitario" />
+    <title>TrackUniversity - Seguimiento de buses</title>
     <style>
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      
+      :root {
+        --primary: #2563eb;
+        --primary-dark: #1e40af;
+        --primary-light: #3b82f6;
+        --surface: #ffffff;
+        --surface-dim: #f8fafc;
+        --surface-dimmer: #f1f5f9;
+        --border: #e2e8f0;
+        --border-light: #f1f5f9;
+        --text: #0f172a;
+        --text-secondary: #64748b;
+        --text-tertiary: #94a3b8;
+        --success: #10b981;
+        --success-light: #d1fae5;
+        --danger: #ef4444;
+      }
 
       body {
-        font-family: 'Segoe UI', system-ui, sans-serif;
-        background: #f0f4f8;
-        color: #1a202c;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--surface-dim);
+        color: var(--text);
+        line-height: 1.5;
       }
 
-      /* ── Header ──────────────────────────────────────── */
+      /* HEADER */
       header {
-        background: linear-gradient(135deg, #0d2b5e 0%, #1565C0 100%);
-        color: white;
-        padding: 1.5rem 2rem;
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 1.25rem 2rem;
         display: flex;
         align-items: center;
-        gap: 1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       }
-      header h1 { font-size: 1.6rem; font-weight: 700; }
-      header p  { font-size: 0.9rem; opacity: 0.85; margin-top: 0.2rem; }
 
-      /* ── Layout ──────────────────────────────────────── */
-      main {
-        max-width: 1200px;
-        margin: 2rem auto;
-        padding: 0 1.5rem;
-        display: grid;
-        grid-template-columns: 1fr 2fr;
-        gap: 1.5rem;
+      .header-content {
+        display: flex;
+        align-items: flex-start;
+        gap: 1.25rem;
       }
-      @media (max-width: 768px) {
+
+      .header-icon {
+        font-size: 2rem;
+        line-height: 1;
+      }
+
+      .header-text h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.25rem;
+      }
+
+      .header-text p {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+      }
+
+      .header-stats {
+        display: flex;
+        gap: 2rem;
+        margin-left: auto;
+        align-items: center;
+      }
+
+      .time-display {
+        font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--primary);
+        background: linear-gradient(135deg, var(--primary-light), var(--primary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        min-width: 100px;
+        text-align: right;
+      }
+      header .time-display {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--primary);
+        background: none;
+        -webkit-background-clip: unset;
+        -webkit-text-fill-color: unset;
+        background-clip: unset;
+        padding: 0.5rem 1rem;
+        border: 2px solid var(--primary);
+        border-radius: 8px;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+        letter-spacing: 0.05em;
+      }
+      /* MAIN LAYOUT */
+      main {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem;
+        display: grid;
+        grid-template-columns: 1fr 320px;
+        gap: 2rem;
+        position: relative;
+      }
+
+      @media (max-width: 1200px) {
         main { grid-template-columns: 1fr; }
       }
 
-      /* ── Sidebar ─────────────────────────────────────── */
-      .sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
-
-      /* ── Cards ───────────────────────────────────────── */
-      .card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.25rem 1.5rem;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-      }
-      .card h2 {
-        font-size: 1rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #0d2b5e;
-        margin-bottom: 1rem;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e2e8f0;
-      }
-
-      /* ── Route Cards ─────────────────────────────────── */
-      .route-card {
-        border-left: 4px solid var(--route-color, #1565C0);
-        padding: 0.75rem 1rem;
-        border-radius: 0 8px 8px 0;
-        background: #f7fafc;
-        margin-bottom: 0.75rem;
-      }
-      .route-card:last-child { margin-bottom: 0; }
-      .route-card h3 { font-size: 1rem; font-weight: 600; color: #1a202c; }
-      .route-card .schedule { font-size: 0.8rem; color: #718096; margin: 0.25rem 0 0.5rem; }
-      .route-card ul { list-style: none; }
-      .route-card ul li {
-        font-size: 0.85rem;
-        color: #4a5568;
-        padding: 0.1rem 0;
-      }
-      .route-card ul li::before { content: '📍 '; }
-
-      /* ── Announcements ───────────────────────────────── */
-      .announcement {
-        display: flex;
-        gap: 0.75rem;
-        padding: 0.5rem 0;
-        border-bottom: 1px solid #e2e8f0;
-        font-size: 0.875rem;
-      }
-      .announcement:last-child { border-bottom: none; }
-      .announcement .date {
-        font-weight: 600;
-        color: #1565C0;
-        white-space: nowrap;
-      }
-
-      /* ── Map section ─────────────────────────────────── */
-      .map-section { display: flex; flex-direction: column; gap: 0; }
-      .map-section .card { flex: 1; }
-      .map-section .card h2 { margin-bottom: 0.75rem; }
-
-      .live-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #38a169;
-        background: #f0fff4;
-        border: 1px solid #c6f6d5;
-        border-radius: 999px;
-        padding: 0.2rem 0.6rem;
-        margin-left: 0.75rem;
-        vertical-align: middle;
-      }
-      .live-badge::before {
+      /* Decorative elements */
+      main::before {
         content: '';
-        width: 8px;
-        height: 8px;
+        position: fixed;
+        top: -50%;
+        right: -10%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(37, 99, 235, 0.1) 0%, transparent 70%);
         border-radius: 50%;
-        background: #38a169;
-        animation: pulse 1.5s infinite;
+        pointer-events: none;
+        z-index: 0;
       }
-      @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50%       { opacity: 0.3; }
+
+      main::after {
+        content: '';
+        position: fixed;
+        bottom: -20%;
+        left: 5%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* PERFORMANCE PANEL */
+      .performance-panel {
+        background: var(--surface);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .panel-header h3 {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--text);
+      }
+
+      .settings-icon {
+        cursor: pointer;
+        font-size: 1.1rem;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+      }
+
+      .settings-icon:hover {
+        opacity: 1;
+      }
+
+      .metric {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .metric-icon {
+        font-size: 1.5rem;
+      }
+
+      .metric-content {
+        flex: 1;
+      }
+
+      .metric-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .metric-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary);
+      }
+
+      .metric-status {
+        font-size: 0.7rem;
+        color: var(--success);
+      }
+
+      .metric-status::before {
+        content: '● ';
+        color: var(--success);
+      }
+
+      .section-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 0.5rem 0;
+      }
+
+      .collapsible {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        cursor: pointer;
+        border: none;
+        background: none;
+        width: 100%;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .collapsible:hover {
+        color: var(--primary);
+      }
+
+      .chevron {
+        transition: transform 0.3s;
+      }
+
+      .chevron.open {
+        transform: rotate(180deg);
+      }
+
+      .report-button {
+        background: var(--primary);
+        color: white;
+        border: none;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-size: 0.85rem;
+        width: 100%;
+      }
+
+      .report-button:hover {
+        background: var(--primary-dark);
+        transform: translateY(-1px);
+      }
+
+      @media (max-width: 1024px) {
+        main { gap: 1.5rem; padding: 1.5rem; }
+        .performance-panel { position: static; }
+      }
+
+      @media (max-width: 768px) {
+        main { gap: 1.5rem; padding: 1rem; }
+        header { padding: 1rem; }
+        .performance-panel { display: none; }
+      }
+
+      /* MAP CONTAINER */
+      .map-container {
+        background: var(--surface);
+        border-radius: 16px;
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+        height: fit-content;
+        position: relative;
+        z-index: 1;
+        backdrop-filter: blur(10px);
+      }
+
+      .map-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.02) 0%, rgba(16, 185, 129, 0.02) 100%);
+        pointer-events: none;
+      }
+
+      .map-header {
+        padding: 1.75rem 1.75rem;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
+        position: relative;
+        z-index: 1;
+      }
+
+      .map-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--border), transparent);
+      }
+
+      .map-header-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .map-header h2 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text);
+        letter-spacing: -0.01em;
+      }
+
+      .status-live {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.85rem;
+        color: var(--success);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .status-dot {
+        width: 10px;
+        height: 10px;
+        background: var(--success);
+        border-radius: 50%;
+        animation: pulse-enhanced 2s infinite;
+        box-shadow: 0 0 12px var(--success), inset 0 0 4px rgba(255, 255, 255, 0.3);
+      }
+
+      @keyframes pulse-enhanced {
+        0% { 
+          opacity: 1; 
+          transform: scale(1);
+          box-shadow: 0 0 12px var(--success), inset 0 0 4px rgba(255, 255, 255, 0.3);
+        }
+        50% { 
+          opacity: 0.6; 
+          transform: scale(1.15);
+          box-shadow: 0 0 20px var(--success), inset 0 0 6px rgba(255, 255, 255, 0.2);
+        }
+        100% { 
+          opacity: 1; 
+          transform: scale(1);
+          box-shadow: 0 0 12px var(--success), inset 0 0 4px rgba(255, 255, 255, 0.3);
+        }
+      }
+
+      .map-content {
+        flex: 1;
+        min-height: 700px;
+        position: relative;
+        z-index: 1;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(248, 250, 252, 0.5) 100%);
+      }
+
+      .info-bar {
+        padding: 1.5rem 1.75rem;
+        background: linear-gradient(135deg, var(--surface-dimmer) 0%, rgba(248, 250, 252, 0.8) 100%);
+        border-top: 1px solid var(--border);
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        position: relative;
+        z-index: 1;
+      }
+
+      .info-bar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--border), transparent);
+      }
+
+      .info-bar-left {
+        display: flex;
+        gap: 3rem;
+      }
+
+      .info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        transition: all 0.3s ease;
+      }
+
+      .info-item:hover {
+        color: var(--primary);
+      }
+
+      .info-icon {
+        font-size: 1.1rem;
+        animation: float 3s ease-in-out infinite;
+      }
+
+      .info-item:nth-child(2) .info-icon {
+        animation-delay: 0.5s;
+      }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-3px); }
+      }
+
+      .time-display {
+        font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+        font-size: 0.9rem;
+        color: var(--primary);
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        padding: 0.5rem 1rem;
+        background: rgba(37, 99, 235, 0.08);
+        border: 1px solid rgba(37, 99, 235, 0.2);
+        border-radius: 6px;
+        transition: all 0.3s ease;
+      }
+
+      .time-display:hover {
+        background: rgba(37, 99, 235, 0.15);
+        color: var(--primary-dark);
+      }
+
+      /* Responsive tweaks */
+      @media (max-width: 768px) {
+        .map-content {
+          min-height: 500px;
+        }
+        
+        .info-bar {
+          flex-direction: column;
+          text-align: center;
+        }
+        
+        .info-bar-left {
+          flex-direction: column;
+          width: 100%;
+          text-align: center;
+          gap: 1rem;
+        }
+
+        .map-header {
+          flex-direction: column;
+          gap: 1rem;
+          align-items: flex-start;
+        }
+
+        .status-live {
+          width: 100%;
+          justify-content: flex-start;
+        }
       }
     </style>
   </head>
 
   <body>
     <header>
-      <div>
-        <h1>🚌 TrackUniversity</h1>
-        <p>Monitoreo en tiempo real del transporte universitario</p>
+      <div class="header-content">
+        <div class="header-icon">🚌</div>
+        <div class="header-text">
+          <h1>TrackUniversity</h1>
+          <p>Sistema de monitoreo de transporte</p>
+        </div>
+      </div>
+      <div class="header-stats">
+        <div class="time-display" id="header-time">--:--:--</div>
       </div>
     </header>
 
     <main>
-      <!-- ── Sidebar: contenido 100% estático (sin JS) ── -->
-      <aside class="sidebar">
-
-        <section class="card">
-          <h2>Rutas Disponibles</h2>
-          {routes.map(route => (
-            <div class="route-card" style={`--route-color: ${route.color}`}>
-              <h3>{route.name}</h3>
-              <p class="schedule">🕐 {route.schedule}</p>
-              <ul>
-                {route.stops.map(stop => <li>{stop}</li>)}
-              </ul>
-            </div>
-          ))}
-        </section>
-
-        <section class="card">
-          <h2>Noticias del Campus</h2>
-          {announcements.map(a => (
-            <div class="announcement">
-              <span class="date">{a.date}</span>
-              <span>{a.text}</span>
-            </div>
-          ))}
-        </section>
-
-      </aside>
-
-      <!-- ── Isla interactiva: sólo este componente carga JS en el cliente ── -->
-      <section class="map-section">
-        <div class="card">
-          <h2>
-            Mapa en Tiempo Real
-            <span class="live-badge">EN VIVO</span>
-          </h2>
-
-          <!--
-            client:load → Astro "isla": hidrata este componente React
-            inmediatamente al cargar la página. El resto del HTML es
-            HTML puro sin JavaScript.
-          -->
+      <section class="map-container" id="map-section">
+        <div class="map-header">
+          <div class="map-header-title">
+            <h2>Ubicación en tiempo real</h2>
+          </div>
+          <div class="status-live">
+            <span class="status-dot"></span>
+            <span>EN VIVO</span>
+          </div>
+        </div>
+        <div class="map-content">
           <BusMap client:only="react" />
         </div>
+        <div class="info-bar">
+          <div class="info-bar-left">
+            <div class="info-item">
+              <span class="info-icon">🔄</span>
+              <span>Actualización en vivo</span>
+            </div>
+            <div class="info-item">
+              <span class="info-icon">📍</span>
+              <span>Bogotá, Colombia</span>
+            </div>
+          </div>
+          <div class="time-display" id="time">--:--:--</div>
+        </div>
       </section>
+
+      <!-- Performance Panel -->
+      <aside class="performance-panel">
+        <div class="panel-header">
+          <h3>Rendimiento actual</h3>
+          <span class="settings-icon">⚙️</span>
+        </div>
+
+        <div class="metric">
+          <span class="metric-icon">🚌</span>
+          <div class="metric-content">
+            <div class="metric-label">Buses activos</div>
+            <div class="metric-value" id="active-buses">0</div>
+            <div class="metric-status">en ruta</div>
+          </div>
+        </div>
+
+        <div class="metric">
+          <span class="metric-icon">👥</span>
+          <div class="metric-content">
+            <div class="metric-label">Pasajeros en buses</div>
+            <div class="metric-value" id="total-passengers">0</div>
+          </div>
+        </div>
+
+        <div class="metric">
+          <span class="metric-icon">🏎️</span>
+          <div class="metric-content">
+            <div class="metric-label">Velocidad promedio</div>
+            <div class="metric-value" id="avg-speed">0</div>
+            <div style="font-size: 0.75rem; color: var(--text-tertiary);">km/h</div>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <button class="collapsible" onclick="document.getElementById('occupancy-container').style.display = document.getElementById('occupancy-container').style.display === 'none' ? 'block' : 'none'; this.querySelector('.chevron').classList.toggle('open');">
+          <span>Ocupación de rutas</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div id="occupancy-container" style="display: none; font-size: 0.8rem; color: var(--text-secondary); padding: 0.5rem 0;">
+          <RouteOccupancy client:only="react" />
+        </div>
+
+        <!-- Hidden data container -->
+        <div id="occupancy-data" style="display: none;">[]</div>
+
+        <button class="report-button">Ver reporte</button>
+      </aside>
     </main>
+
+    <script>
+      function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('es-CO', { hour12: false });
+        
+        const headerTime = document.getElementById('header-time');
+        const footerTime = document.getElementById('time');
+        
+        if (headerTime) headerTime.textContent = timeString;
+        if (footerTime) footerTime.textContent = timeString;
+      }
+      
+      updateTime();
+      setInterval(updateTime, 1000);
+
+      // Smooth fade in on load
+      document.body.style.opacity = '0';
+      window.addEventListener('load', () => {
+        document.body.animate([
+          { opacity: 0 },
+          { opacity: 1 }
+        ], {
+          duration: 800,
+          fill: 'forwards'
+        });
+      });
+    </script>
   </body>
 </html>

@@ -111,6 +111,102 @@ services:
       mosquitto:
         condition: service_healthy
 
+  # ── 7. Simulador GPS — Bus TUB-003 (Ruta 1) ────────────────────────────────
+  simulator-ruta1-bus2:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: trackuniversity-simulator-ruta1-bus2
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: "mosquitto"
+      MQTT_PORT: "1883"
+      BUS_PLATE: "TUB-003"
+      BUS_ROUTE: "ruta1"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
+  # ── 8. Simulador GPS — Bus TUB-006 (Ruta 2) ────────────────────────────────
+  simulator-ruta2-bus2:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: trackuniversity-simulator-ruta2-bus2
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: "mosquitto"
+      MQTT_PORT: "1883"
+      BUS_PLATE: "TUB-006"
+      BUS_ROUTE: "ruta2"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
+  # ── 9. Simulador GPS — Bus TUB-009 (Ruta 3) ────────────────────────────────
+  simulator-ruta3:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: trackuniversity-simulator-ruta3
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: "mosquitto"
+      MQTT_PORT: "1883"
+      BUS_PLATE: "TUB-009"
+      BUS_ROUTE: "ruta3"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
+  # ── 10. Simulador GPS — Bus TUB-012 (Ruta 4) ────────────────────────────────
+  simulator-ruta4:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: trackuniversity-simulator-ruta4
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: "mosquitto"
+      MQTT_PORT: "1883"
+      BUS_PLATE: "TUB-012"
+      BUS_ROUTE: "ruta4"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
+  # ── 11. Simulador GPS — Bus TUB-015 (Ruta 5) ────────────────────────────────
+  simulator-ruta5:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: trackuniversity-simulator-ruta5
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: "mosquitto"
+      MQTT_PORT: "1883"
+      BUS_PLATE: "TUB-015"
+      BUS_ROUTE: "ruta5"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
+  # ── 12. Simulador GPS — Bus TUB-017 (Ruta 6) ────────────────────────────────
+  simulator-ruta6:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: trackuniversity-simulator-ruta6
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: "mosquitto"
+      MQTT_PORT: "1883"
+      BUS_PLATE: "TUB-017"
+      BUS_ROUTE: "ruta6"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
 volumes:
   mysql_data:
   mosquitto_data:
