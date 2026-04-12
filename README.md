@@ -1,125 +1,20 @@
-# TrackUniversity 🚌
+# TrackUniversity
 
 Monitoreo en tiempo real de rutas de transporte universitario.
 
-## Arquitectura
+Sistema que permite visualizar la ubicación, velocidad y estado de los buses universitarios sobre un mapa interactivo, usando MQTT para telemetría en tiempo real.
 
-```
-[Estudiante] → [UI Astro] ──HTTP/JSON──→ [Backend .NET]  ──MySQL──→ [Base de datos]
-                                               ↑
-                                          subscribe MQTT
-                                               ↑
-                               [Broker Mosquitto / HiveMQ]
-                                               ↑
-                                    publish MQTT cada 5s
-                                               ↑
-                               [Simulador Python (bus GPS)]
-```
+---
+
+## Stack tecnológico
 
 | Componente | Tecnología | Puerto |
 |---|---|---|
-| Frontend | Astro + React + Leaflet | 4321 |
-| Backend | .NET 8 ASP.NET Core + Worker | 5000 |
+| Frontend | Astro 4 + React 18 + Leaflet | 4321 |
+| Backend | .NET 8 ASP.NET Core + Worker Service | 5000 |
 | Base de datos | MySQL 8 | 3306 |
-| Broker (local) | Mosquitto 2 | 1883 / 9001(WS) |
-
----
-
-## Requisitos previos
-
-- [.NET 8 SDK](https://dotnet.microsoft.com/download)
-- [Node.js ≥ 18](https://nodejs.org/)
-- [Python 3.11+](https://www.python.org/)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) *(para MySQL + Mosquitto locales)*
-
----
-
-## Inicio rápido (local con Docker)
-
-### 1. Levantar MySQL + Mosquitto
-
-```bash
-docker-compose up -d
-```
-
-Espera ~15 s hasta que el contenedor `trackuniversity-db` responda.
-
-### 2. Backend .NET
-
-```bash
-cd backend/TrackUniversity
-dotnet restore
-dotnet run
-# API disponible en http://localhost:5000
-```
-
-Al arrancar, `.NET` crea las tablas automáticamente y siembra 2 buses en la BD.
-
-### 3. Frontend Astro
-
-```bash
-cd frontend
-cp .env.example .env        # ya tiene PUBLIC_API_URL=http://localhost:5000
-npm install
-npm run dev
-# UI disponible en http://localhost:4321
-```
-
-### 4. Simulador GPS
-
-```bash
-cd simulator
-pip install -r requirements.txt
-python bus_simulator.py
-# Publica coordenadas en universidad/bus/ruta1 cada 5 s
-```
-
-Verás el marcador del bus moverse en el mapa cada ~5 segundos.
-
----
-
-## Usar HiveMQ Cloud (broker en la nube) en lugar de Mosquitto local
-
-HiveMQ Cloud tiene un plan gratuito que no requiere ninguna instalación.
-
-### Pasos
-
-1. Crear cuenta en <https://console.hivemq.cloud> → crear un **Free Cluster**.
-2. En el cluster, ir a **Access Management** → crear credenciales (usuario + contraseña).
-3. Copiar el **Cluster URL** (algo como `abc123.s2.eu.hivemq.cloud`).
-
-### Configurar el backend
-
-Edita `backend/TrackUniversity/appsettings.json`:
-
-```json
-"Mqtt": {
-  "Host": "abc123.s2.eu.hivemq.cloud",
-  "Port": 8883,
-  "UseTls": true,
-  "Username": "tu_usuario",
-  "Password": "tu_contraseña"
-}
-```
-
-### Configurar el simulador
-
-```bash
-# PowerShell
-$env:MQTT_HOST     = "abc123.s2.eu.hivemq.cloud"
-$env:MQTT_PORT     = "8883"
-$env:MQTT_USE_TLS  = "true"
-$env:MQTT_USERNAME = "tu_usuario"
-$env:MQTT_PASSWORD = "tu_contraseña"
-python bus_simulator.py
-
-# Bash
-MQTT_HOST=abc123.s2.eu.hivemq.cloud MQTT_PORT=8883 \
-MQTT_USE_TLS=true MQTT_USERNAME=tu_usuario MQTT_PASSWORD=tu_contraseña \
-python bus_simulator.py
-```
-
-> Con HiveMQ puedes **detener Mosquitto y MySQL en Docker**; sólo necesitarás el contenedor de MySQL para la BD.
+| Broker MQTT | Mosquitto 2 | 1883 (TCP) / 9001 (WS) |
+| Simulador GPS | Python 3 + paho-mqtt | — |
 
 ---
 
@@ -127,73 +22,283 @@ python bus_simulator.py
 
 ```
 TrackUniversity/
-├── docker-compose.yml          # MySQL + Mosquitto locales
+├── .gitignore
+├── docker-compose.yml
 ├── mosquitto/
-│   └── config/mosquitto.conf   # Configuración del broker
-│
+│   └── config/
+│       └── mosquitto.conf          # Configuración del broker
 ├── simulator/
-│   ├── bus_simulator.py        # Script Python: publica GPS falso por MQTT
-│   └── requirements.txt
-│
+│   ├── bus_simulator.py            # Simula GPS y velocidad, publica por MQTT
+│   ├── requirements.txt
+│   └── Dockerfile
 ├── backend/
 │   └── TrackUniversity/
 │       ├── Controllers/
-│       │   └── BusController.cs       # GET /api/bus, /api/bus/{id}/position, /history
+│       │   ├── BusController.cs    # GET /api/bus  /api/bus/{id}  /position  /history
+│       │   └── RoutesController.cs # GET /api/routes  /api/routes/{id}  /buses
 │       ├── Data/
-│       │   └── AppDbContext.cs        # Entity Framework (MySQL)
+│       │   └── AppDbContext.cs     # EF Core (MySQL)
 │       ├── Models/
-│       │   ├── Bus.cs
-│       │   └── BusReading.cs
+│       │   ├── Bus.cs              # Entidad bus (placa, capacidad, última posición)
+│       │   ├── BusReading.cs       # Historial de telemetría
+│       │   ├── Route.cs            # Ruta (origen, destino, código MQTT)
+│       │   └── RouteStop.cs        # Paradas de una ruta
 │       ├── Services/
-│       │   └── MqttWorkerService.cs   # Background Service: subscribe MQTT → guarda en BD
-│       ├── Program.cs
-│       ├── appsettings.json           # Config local (Mosquitto + MySQL Docker)
-│       └── appsettings.HiveMQ.json   # Ejemplo config HiveMQ Cloud
-│
+│       │   └── MqttWorkerService.cs # Suscriptor MQTT → persiste en BD
+│       ├── Program.cs              # Composición + datos semilla
+│       ├── appsettings.json        # Config local
+│       ├── TrackUniversity.csproj
+│       └── Dockerfile
 └── frontend/
     ├── src/
     │   ├── pages/
-    │   │   └── index.astro            # Página principal (contenido estático + isla)
+    │   │   └── index.astro         # Página principal
     │   └── components/
-    │       └── BusMap.jsx             # 🏝 Isla React: mapa Leaflet con polling
+    │       └── BusMap.jsx          # Isla React: mapa con marcadores en tiempo real
+    ├── .env.example                # Plantilla de variables de entorno
     ├── astro.config.mjs
-    └── .env.example
+    ├── package.json
+    └── Dockerfile
 ```
 
 ---
 
-## API del backend
+## Archivos excluidos por .gitignore (debes crearlos tú)
+
+Estos archivos **no están en el repositorio** y son necesarios para ejecutar el proyecto:
+
+### `frontend/.env`
+
+Cópialo desde la plantilla:
+
+```powershell
+# Opción A — Docker completo: el navegador llama al backend en localhost:5000
+copy frontend\.env.example frontend\.env
+
+# Opción B — Local híbrido: igual, PUBLIC_API_URL=http://localhost:5000
+copy frontend\.env.example frontend\.env
+```
+
+Contenido del archivo:
+
+```env
+PUBLIC_API_URL=http://localhost:5000
+```
+
+> Sin este archivo Astro lanza un error al compilar, porque `import.meta.env.PUBLIC_API_URL` queda `undefined`.
+
+---
+
+## Cómo correr el proyecto
+
+Hay dos modos. Usa el que prefieras.
+
+---
+
+### Opción A — Docker completo (todo en contenedores)
+
+Requiere: **Docker Desktop corriendo**.
+
+```powershell
+docker-compose up --build
+```
+
+Esto levanta los 6 servicios en orden:
+1. `mysql` — base de datos
+2. `mosquitto` — broker MQTT
+3. `backend` — API .NET
+4. `frontend` — UI Astro compilada con Nginx
+5. `simulator-ruta1` — simula bus TUB-001
+6. `simulator-ruta2` — simula bus TUB-002
+
+Señales de que todo está listo en los logs:
+
+```
+trackuniversity-backend   | [MQTT] Conectado a mosquitto:1883
+trackuniversity-backend   | Datos semilla insertados
+trackuniversity-simulator-ruta1 | [SIM] [0001] universidad/bus/TUB-001 → {"lat":...}
+```
+
+Acceder en:
+- Frontend: http://localhost:4321
+- API: http://localhost:5000/api/bus
+
+Para detener:
+
+```powershell
+docker-compose down
+```
+
+Para detener y borrar los volúmenes (BD limpia):
+
+```powershell
+docker-compose down -v
+```
+
+---
+
+### Opción B — Local híbrido (MySQL + Mosquitto en Docker, el resto local)
+
+Requiere: **Docker Desktop corriendo** + .NET 8 SDK + Node.js ≥ 18 + Python 3 (`py` en Windows).
+
+#### Paso 1 — Levantar MySQL y Mosquitto
+
+```powershell
+docker-compose up mysql mosquitto -d
+```
+
+Espera ~15 segundos hasta que ambos contenedores estén `healthy`:
+
+```powershell
+docker ps
+# trackuniversity-db     (healthy)
+# trackuniversity-broker (healthy)
+```
+
+#### Paso 2 — Backend .NET
+
+Abre una terminal en `backend/TrackUniversity/`:
+
+```powershell
+cd backend\TrackUniversity
+dotnet restore
+dotnet run
+```
+
+Espera ver:
+
+```
+[MQTT] Conectado a localhost:1883
+Datos semilla insertados
+Now listening on: http://localhost:5000
+```
+
+> La primera vez crea las tablas y siembra 2 rutas, 9 paradas y 2 buses automáticamente.
+
+#### Paso 3 — Frontend Astro
+
+Abre **otra terminal** en `frontend/`:
+
+```powershell
+cd frontend
+
+# Solo la primera vez:
+copy .env.example .env
+npm install
+
+# Siempre:
+npm run dev
+```
+
+Acceder en: http://localhost:4321
+
+#### Paso 4 — Simulador GPS (una terminal por bus)
+
+Abre **otra terminal** en `simulator/`:
+
+```powershell
+cd simulator
+
+# Solo la primera vez:
+py -m pip install -r requirements.txt
+
+# Bus 1:
+$env:MQTT_HOST="localhost"; $env:BUS_PLATE="TUB-001"; $env:BUS_ROUTE="ruta1"; py bus_simulator.py
+```
+
+Para un segundo bus, abre **otra terminal**:
+
+```powershell
+cd simulator
+$env:MQTT_HOST="localhost"; $env:BUS_PLATE="TUB-002"; $env:BUS_ROUTE="ruta2"; py bus_simulator.py
+```
+
+Verás en consola:
+
+```
+[MQTT] Conectando a localhost:1883 ...
+[SIM] Bus 'TUB-001' en ruta 'ruta1'
+[SIM] [0001] universidad/bus/TUB-001 → {"lat": 4.628400, "lng": -74.064100, "speed": 32.5}
+[SIM] [0002] universidad/bus/TUB-001 → {"lat": 4.628510, "lng": -74.063980, "speed": 31.8}
+```
+
+El mapa en http://localhost:4321 actualizará la posición del bus cada 5 segundos.
+
+---
+
+## Endpoints del API
+
+### Buses
 
 | Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/api/bus` | Lista todos los buses con su última posición |
-| GET | `/api/bus/{id}/position` | Posición actual de un bus |
-| GET | `/api/bus/{id}/history?limit=50` | Historial de lecturas GPS |
+|---|---|---|
+| GET | `/api/bus` | Todos los buses con info de ruta |
+| GET | `/api/bus/{id}` | Detalle completo de un bus |
+| GET | `/api/bus/{id}/position` | Última posición y velocidad |
+| GET | `/api/bus/{id}/history?limit=50` | Historial de telemetría |
+
+### Rutas
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/api/routes` | Todas las rutas con paradas y buses |
+| GET | `/api/routes/{id}` | Detalle de una ruta |
+| GET | `/api/routes/{id}/buses` | Buses activos en una ruta |
 
 ---
 
-## Tópico MQTT
+## Tópicos MQTT
 
-| Tópico | Publicado por | Suscrito por |
-|--------|---------------|--------------|
-| `universidad/bus/ruta1` | Simulador Python | Backend .NET |
-| `universidad/bus/ruta2` | (ampliar) | Backend .NET |
+El simulador publica y el backend .NET suscribe al patrón:
 
-Formato del mensaje:
+```
+universidad/bus/{PLACA}
+```
+
+Ejemplos:
+- `universidad/bus/TUB-001`
+- `universidad/bus/TUB-002`
+
+Payload JSON:
+
 ```json
-{ "lat": 4.628400, "lng": -74.064100 }
+{ "lat": 4.628400, "lng": -74.064100, "speed": 32.5 }
 ```
 
 ---
 
-## Cómo justificar el stack ante el profesor
+## Variables de entorno
 
-| Decisión | Justificación |
-|----------|---------------|
-| **Pub/Sub** | El bus publica sin saber cuántos clientes están conectados. Desacoplamiento total productor/consumidor. |
-| **MQTT** | Protocolo ligero (cabecera mínima) diseñado para IoT. QoS 1 garantiza entrega al menos una vez. |
-| **Worker Service .NET** | Background Service que escucha MQTT indefinidamente sin bloquear el hilo del servidor HTTP. |
-| **Entity Framework** | Abstracción ORM que evita SQL manual; `EnsureCreated()` genera el schema en arranque. |
-| **MySQL** | Almacenamiento histórico de coordenadas con índice compuesto `(BusId, Timestamp)` para consultas eficientes. |
-| **Astro Islands** | El 90 % del HTML es estático (0 JS). Sólo el mapa se hidrata → menor bundle, mejor rendimiento. |
-| **Leaflet / OpenStreetMap** | Gratuito, sin API key, funciona offline con tiles cacheados. |
+### Frontend (`frontend/.env`) — **no está en el repo**
+
+| Variable | Valor por defecto | Descripción |
+|---|---|---|
+| `PUBLIC_API_URL` | `http://localhost:5000` | URL base del backend |
+
+### Simulador
+
+| Variable | Default | Descripción |
+|---|---|---|
+| `MQTT_HOST` | `mosquitto` | Host del broker |
+| `MQTT_PORT` | `1883` | Puerto TCP |
+| `BUS_PLATE` | `TUB-001` | Placa del bus a simular |
+| `BUS_ROUTE` | `ruta1` | Ruta a simular (`ruta1` o `ruta2`) |
+
+### Backend (en Docker lo inyecta `docker-compose.yml`; en local usa `appsettings.json`)
+
+| Variable | Descripción |
+|---|---|
+| `ConnectionStrings__DefaultConnection` | Cadena de conexión MySQL |
+| `Mqtt__Host` | Host del broker MQTT |
+| `Mqtt__Port` | Puerto del broker MQTT |
+
+---
+
+## Datos semilla
+
+Al arrancar por primera vez, el backend inserta automáticamente:
+
+- **Ruta 1** — Entrada Principal → Bosa Terminal (5 paradas, ~45 min)
+  - Bus: **TUB-001** (capacidad 40)
+- **Ruta 2** — Campus Sur → Portal Norte (4 paradas, ~35 min)
+  - Bus: **TUB-002** (capacidad 35)
