@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Route = TrackUniversity.Models.Route;
 using TrackUniversity.Models;
 
 namespace TrackUniversity.Data;

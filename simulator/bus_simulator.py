@@ -115,13 +115,7 @@ def main():
     client.on_connect    = on_connect
     client.on_disconnect = on_disconnect
 
-    if USE_TLS:
-        print("[MQTT] Usando TLS (HiveMQ Cloud)")
-        client.tls_set(tls_version=ssl.PROTOCOL_TLS_CLIENT)
-        client.username_pw_set(USERNAME, PASSWORD)
-        port = int(os.getenv("MQTT_PORT", "8883"))
-    else:
-        port = BROKER_PORT
+    port = BROKER_PORT
 
     print(f"[MQTT] Conectando a {BROKER_HOST}:{port} ...")
     client.connect(BROKER_HOST, port, keepalive=60)
