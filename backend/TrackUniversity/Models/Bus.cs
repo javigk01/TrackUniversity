@@ -23,6 +23,9 @@ public class Bus
     /// <summary>Velocidad en km/h reportada en la última lectura.</summary>
     public double? LastSpeed { get; set; }
 
+    /// <summary>Número actual de pasajeros en el bus.</summary>
+    public int CurrentPassengers { get; set; }
+
     public DateTime? LastUpdated { get; set; }
 
     public Route Route { get; set; } = null!;

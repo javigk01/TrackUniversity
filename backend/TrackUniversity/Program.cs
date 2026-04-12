@@ -32,11 +32,20 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// ── Crear tablas y sembrar datos iniciales ──────────────────────────────────
+// ── Crear tablas y aplicar migraciones ──────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    try
+    {
+        // Aplicar todas las migraciones pendientes
+        db.Database.Migrate();
+        Console.WriteLine("[DB] Migraciones aplicadas correctamente.");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DB] Error aplicando migraciones: {ex.Message}");
+    }
 
     if (!db.Routes.Any())
     {

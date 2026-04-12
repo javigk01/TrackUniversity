@@ -103,6 +103,7 @@ public class MqttWorkerService : BackgroundService
             bus.LastLatitude  = data.Lat;
             bus.LastLongitude = data.Lng;
             bus.LastSpeed     = data.Speed;
+            bus.CurrentPassengers = data.Passengers;
             bus.LastUpdated   = DateTime.UtcNow;
 
             // Guardar lectura histórica
@@ -124,7 +125,7 @@ public class MqttWorkerService : BackgroundService
     }
 }
 
-// DTO para deserializar el payload: {"lat":4.628,"lng":-74.064,"speed":35.5}
+// DTO para deserializar el payload: {"lat":4.628,"lng":-74.064,"speed":35.5,"passengers":15}
 internal sealed class BusTelemetryMessage
 {
     [JsonPropertyName("lat")]
@@ -135,4 +136,7 @@ internal sealed class BusTelemetryMessage
 
     [JsonPropertyName("speed")]
     public double Speed { get; set; }
+
+    [JsonPropertyName("passengers")]
+    public int Passengers { get; set; }
 }

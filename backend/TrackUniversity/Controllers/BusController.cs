@@ -27,6 +27,7 @@ public class BusController : ControllerBase
                 b.LastLatitude,
                 b.LastLongitude,
                 b.LastSpeed,
+                b.CurrentPassengers,
                 b.LastUpdated,
                 Route = new
                 {
@@ -59,6 +60,7 @@ public class BusController : ControllerBase
                 b.LastLatitude,
                 b.LastLongitude,
                 b.LastSpeed,
+                b.CurrentPassengers,
                 b.LastUpdated,
                 Route = new
                 {

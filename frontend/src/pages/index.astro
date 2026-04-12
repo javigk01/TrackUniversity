@@ -1,6 +1,7 @@
 ---
 import BusMap from '../components/BusMap.jsx';
 import RouteOccupancy from '../components/RouteOccupancy.jsx';
+import OccupancyChart from '../components/OccupancyChart.jsx';
 ---
 
 <!DOCTYPE html>
@@ -537,7 +538,6 @@ import RouteOccupancy from '../components/RouteOccupancy.jsx';
               <span>Bogotá, Colombia</span>
             </div>
           </div>
-          <div class="time-display" id="time">--:--:--</div>
         </div>
       </section>
 
@@ -545,7 +545,6 @@ import RouteOccupancy from '../components/RouteOccupancy.jsx';
       <aside class="performance-panel">
         <div class="panel-header">
           <h3>Rendimiento actual</h3>
-          <span class="settings-icon">⚙️</span>
         </div>
 
         <div class="metric">
@@ -576,8 +575,16 @@ import RouteOccupancy from '../components/RouteOccupancy.jsx';
 
         <div class="section-divider"></div>
 
+        <button class="collapsible" onclick="document.getElementById('chart-container').style.display = document.getElementById('chart-container').style.display === 'none' ? 'block' : 'none'; this.querySelector('.chevron').classList.toggle('open');">
+          <span>Gráfico de ocupación</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div id="chart-container" style="display: none; padding: 0.75rem 0;">
+          <OccupancyChart client:only="react" />
+        </div>
+
         <button class="collapsible" onclick="document.getElementById('occupancy-container').style.display = document.getElementById('occupancy-container').style.display === 'none' ? 'block' : 'none'; this.querySelector('.chevron').classList.toggle('open');">
-          <span>Ocupación de rutas</span>
+          <span>Estado actual por ruta</span>
           <span class="chevron">▼</span>
         </button>
         <div id="occupancy-container" style="display: none; font-size: 0.8rem; color: var(--text-secondary); padding: 0.5rem 0;">
@@ -597,10 +604,8 @@ import RouteOccupancy from '../components/RouteOccupancy.jsx';
         const timeString = now.toLocaleTimeString('es-CO', { hour12: false });
         
         const headerTime = document.getElementById('header-time');
-        const footerTime = document.getElementById('time');
         
         if (headerTime) headerTime.textContent = timeString;
-        if (footerTime) footerTime.textContent = timeString;
       }
       
       updateTime();

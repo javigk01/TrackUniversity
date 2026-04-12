@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<BusReading> BusReadings => Set<BusReading>();
     public DbSet<Route> Routes => Set<Route>();
     public DbSet<RouteStop> RouteStops => Set<RouteStop>();
+    public DbSet<RouteOccupancyHistory> RouteOccupancyHistories => Set<RouteOccupancyHistory>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

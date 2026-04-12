@@ -53,6 +53,7 @@ ROUTES: dict[str, list[dict]] = {
         {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal (cierre)
     ],
     "ruta2": [
+        {"lat": 4.6222, "lng": -74.124},   # Campus Sur INICIO DIFERENTE
         {"lat": 4.6100, "lng": -74.1100},  # Campus Sur
         {"lat": 4.6110, "lng": -74.1110},  # Av. Sur
         {"lat": 4.6120, "lng": -74.1090},  # Cafetería
@@ -72,6 +73,7 @@ ROUTES: dict[str, list[dict]] = {
         {"lat": 4.6100, "lng": -74.1100},  # Campus Sur (cierre)
     ],
     "ruta3": [
+        {"lat": 4.6261, "lng": -74.0686},  # Clínica INICIO DIFERENTE
         {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal
         {"lat": 4.6270, "lng": -74.0650},  # Av. Sur
         {"lat": 4.6260, "lng": -74.0690},  # Edificio A
@@ -84,6 +86,7 @@ ROUTES: dict[str, list[dict]] = {
         {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal (cierre)
     ],
     "ruta4": [
+        {"lat": 4.62945, "lng": -74.0573}, # Deportes INICIO DIFERENTE
         {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal
         {"lat": 4.6290, "lng": -74.0600},  # Av. Principal
         {"lat": 4.6295, "lng": -74.0570},  # Parada
@@ -96,6 +99,7 @@ ROUTES: dict[str, list[dict]] = {
         {"lat": 4.6284, "lng": -74.0641},  # Entrada Principal (cierre)
     ],
     "ruta5": [
+        {"lat": 4.61845, "lng": -74.06755}, # Laboratorios INICIO DIFERENTE
         {"lat": 4.6150, "lng": -74.0700},  # Entrada Sur
         {"lat": 4.6165, "lng": -74.0690},  # Av. Sur
         {"lat": 4.6175, "lng": -74.0685},  # Parada
@@ -106,6 +110,7 @@ ROUTES: dict[str, list[dict]] = {
         {"lat": 4.6150, "lng": -74.0700},  # Entrada Sur (cierre)
     ],
     "ruta6": [
+        {"lat": 4.6322, "lng": -74.0556},  # Estacionamiento A INICIO DIFERENTE
         {"lat": 4.6350, "lng": -74.0500},  # Estacionamiento A
         {"lat": 4.6340, "lng": -74.0520},  # Av. Estacionamiento
         {"lat": 4.6320, "lng": -74.0560},  # Parada
@@ -200,10 +205,20 @@ def main():
             point = route_points[idx % len(route_points)]
             speed = estimate_speed(prev_point, point, PUBLISH_INTERVAL)
 
+            # Simular ocupación dinámica (pasajeros en el bus)
+            # Varía entre 0 y capacidad del bus con lógica realista
+            if not hasattr(main, 'occupancy'):
+                main.occupancy = random.randint(10, 25)  # Iniciar entre 10-25 pasajeros
+            else:
+                # Cambios pequeños para simular subidas/bajadas gradualmente
+                change = random.randint(-3, 3)
+                main.occupancy = max(0, min(35, main.occupancy + change))  # Limitar 0-35
+            
             payload = json.dumps({
-                "lat":   round(point["lat"], 6),
-                "lng":   round(point["lng"], 6),
-                "speed": speed,
+                "lat":        round(point["lat"], 6),
+                "lng":        round(point["lng"], 6),
+                "speed":      speed,
+                "passengers": int(main.occupancy),  # Número actual de pasajeros
             })
 
             result = client.publish(topic, payload, qos=1)

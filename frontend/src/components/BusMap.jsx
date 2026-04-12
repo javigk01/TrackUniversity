@@ -97,40 +97,70 @@ export default function BusMap() {
 
   // Calcular todas las métricas GLOBALES (independiente de filtro de ruta)
   useEffect(() => {
-    const allActiveBuses = buses.filter(b => b.lastLatitude && b.lastLongitude);
-    const totalActive = allActiveBuses.length;
-    const totalPassengers = allActiveBuses.reduce((sum, bus) => sum + (bus.capacity || 0), 0);
+    const allActiveBuses = buses.filter(b => b.lastLatitude && b.lastLongitude && b.route?.routeCode);
+    
+    // Contar solo rutas UNICAS activas (en lugar de contar todos los buses duplicados)
+    const uniqueActiveRoutes = new Set(allActiveBuses.map(b => b.route?.routeCode));
+    const totalActive = uniqueActiveRoutes.size; // Contar solo rutas únicas
+    
+    const totalPassengers = allActiveBuses.reduce((sum, bus) => sum + (bus.currentPassengers || 0), 0);
     const avgSpeed = allActiveBuses.length > 0
       ? Math.round(allActiveBuses.reduce((sum, bus) => sum + (bus.lastSpeed || 0), 0) / allActiveBuses.length)
       : 0;
 
-    // Calcular ocupación por ruta
-    const occupancyByRoute = routes.map(route => {
-      const routeBuses = buses.filter(b => b.route?.routeCode === route.routeCode);
-      const activeBuses = routeBuses.filter(b => b.lastLatitude && b.lastLongitude);
-      const totalCapacity = routeBuses.reduce((sum, bus) => sum + (bus.capacity || 0), 0);
-      const activeCapacity = activeBuses.reduce((sum, bus) => sum + (bus.capacity || 0), 0);
+    // Obtener ocupación desde la BD Y GUARDARLA
+    const fetchOccupancy = async () => {
+      try {
+        // Calcular ocupación por ruta basándose en pasajeros reales de la BD
+        const occupancyByRoute = routes.map(route => {
+          const routeBuses = buses.filter(b => b.route?.routeCode === route.routeCode);
+          const totalPassengers = routeBuses.reduce((sum, bus) => sum + (bus.currentPassengers || 0), 0);
+          const totalCapacity = routeBuses.reduce((sum, bus) => sum + (bus.capacity || 0), 0);
+          
+          return {
+            routeCode: route.routeCode,
+            routeName: route.name,
+            activeBuses: routeBuses.filter(b => b.lastLatitude && b.lastLongitude).length,
+            totalBuses: routeBuses.length,
+            occupancyPercent: totalCapacity > 0 ? (totalPassengers / totalCapacity) * 100 : 0,
+          };
+        });
+        
+        console.log('[BusMap] Calculated occupancy:', occupancyByRoute.length, 'routes', occupancyByRoute);
+        
+        // Guardar ocupancia en la BD
+        const response = await fetch(`${API_URL}/api/occupancyhistory`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(occupancyByRoute),
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[BusMap] Error saving occupancy:', response.status, errorText);
+        } else {
+          console.log('[BusMap] Occupancy saved successfully at', new Date().toISOString());
+        }
+        
+        const occupancyEl = document.getElementById('occupancy-data');
+        if (occupancyEl) occupancyEl.textContent = JSON.stringify(occupancyByRoute);
+      } catch (err) {
+        console.error('[BusMap] Error calculating occupancy:', err);
+      }
+    };
 
-      return {
-        routeCode: route.routeCode,
-        routeName: route.name,
-        activeBuses: activeBuses.length,
-        totalBuses: routeBuses.length,
-        occupancyPercent: routeBuses.length > 0 ? (activeCapacity / totalCapacity) * 100 : 0,
-      };
-    });
-
-    // Actualizar elementos del DOM
+    // Actualizar métricas del DOM
     const activeEl = document.getElementById('active-buses');
     const passengersEl = document.getElementById('total-passengers');
     const speedEl = document.getElementById('avg-speed');
-    const occupancyEl = document.getElementById('occupancy-data');
 
     if (activeEl) activeEl.textContent = totalActive;
     if (passengersEl) passengersEl.textContent = totalPassengers;
     if (speedEl) speedEl.textContent = avgSpeed;
-    if (occupancyEl) occupancyEl.textContent = JSON.stringify(occupancyByRoute);
-  }, [buses, routes]);
+    
+    // Obtener ocupación desde la BD cada vez que se actualizan los buses
+    fetchOccupancy();
+  }, [buses]);
 
   return (
     <div style={{ fontFamily: 'inherit' }}>
