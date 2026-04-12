@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+
+  # ── 1. Base de datos ─────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: trackuniversity-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: trackuniversity
+      MYSQL_USER: trackuser
+      MYSQL_PASSWORD: trackpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ── 2. Broker MQTT ───────────────────────────────────────────────────────────
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: trackuniversity-broker
+    restart: unless-stopped
+    ports:
+      - "1883:1883"   # MQTT estándar
+      - "9001:9001"   # MQTT sobre WebSockets
+    volumes:
+      - ./mosquitto/config:/mosquitto/config:ro
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_log:/mosquitto/log
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "health", "-m", "ok", "-q", "0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── 3. Backend .NET ──────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend/TrackUniversity
+      dockerfile: Dockerfile
+    container_name: trackuniversity-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # Cadena de conexión apunta al servicio 'mysql' (nombre de red interno)
+      ConnectionStrings__DefaultConnection: "Server=mysql;Port=3306;Database=trackuniversity;User=trackuser;Password=trackpassword;"
+      # Broker apunta al servicio 'mosquitto' (nombre de red interno)
+      Mqtt__Host: "mosquitto"
+      Mqtt__Port: "1883"
+      Mqtt__UseTls: "false"
+      Cors__AllowedOrigins__0: "http://localhost:4321"
+      ASPNETCORE_ENVIRONMENT: "Production"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      mosquitto:
+        condition: service_healthy
+
+  # ── 4. Frontend Astro (Build + Nginx) ────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # En el contenedor, el navegador del usuario llama al backend
+        # a través de la máquina host, no la red interna de Docker.
+        PUBLIC_API_URL: "http://localhost:5000"
+    container_name: trackuniversity-frontend
+    restart: unless-stopped
+    ports:
+      - "4321:80"
+    depends_on:
+      - backend
+
+  # ── 5. Simulador GPS (Python) ────────────────────────────────────────────────
+  simulator:
+    build:
+      context: ./simulator
+      dockerfile: Dockerfile
+    container_name: trackuniversity-simulator
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: "mosquitto"
+      MQTT_PORT: "1883"
+      MQTT_USE_TLS: "false"
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  mosquitto_data:
+  mosquitto_log:
