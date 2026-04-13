@@ -100,16 +100,15 @@ Hay dos modos. Usa el que prefieras.
 Requiere: **Docker Desktop corriendo**.
 
 ```powershell
-docker-compose up --build
+docker compose up -d --build
 ```
 
-Esto levanta los 6 servicios en orden:
+Esto levanta todos los servicios:
 1. `mysql` — base de datos
 2. `mosquitto` — broker MQTT
 3. `backend` — API .NET
 4. `frontend` — UI Astro compilada con Nginx
-5. `simulator-ruta1` — simula bus TUB-001
-6. `simulator-ruta2` — simula bus TUB-002
+5. `simulator-ruta1..ruta6` — simuladores GPS por ruta
 
 Señales de que todo está listo en los logs:
 
@@ -126,18 +125,47 @@ Acceder en:
 Para detener:
 
 ```powershell
-docker-compose down
+docker compose down
 ```
 
 Para detener y borrar los volúmenes (BD limpia):
 
 ```powershell
-docker-compose down -v
+docker compose down -v
 ```
 
 ---
 
-### Opción B — Local híbrido (MySQL + Mosquitto en Docker, el resto local)
+### Opción B — Demo compartida con ngrok (link público temporal)
+
+Útil para mostrar el proyecto a otras personas sin necesidad de un servidor.
+Requiere: **Docker Desktop corriendo** + [ngrok](https://ngrok.com) instalado y con cuenta creada.
+
+> El nginx del frontend hace proxy de `/api/` al backend internamente, por lo que **solo se necesita un túnel** apuntando al puerto del frontend.
+
+```powershell
+# 1. Levantar todos los contenedores
+docker compose up -d --build
+
+# 2. Exponer el frontend públicamente (en otra terminal)
+ngrok http 4321
+```
+
+Ngrok mostrará una URL del tipo:
+```
+Forwarding   https://xxxx-xxxx-xxxx.ngrok-free.app -> http://localhost:4321
+```
+
+Comparte esa URL. La app completa (mapa, gráficas, API) funcionará a través de ese único link.
+
+**Notas:**
+- La URL cambia cada vez que se reinicia ngrok (plan gratis)
+- Los visitantes verán una pantalla de advertencia de ngrok la primera vez; deben hacer clic en "Visit Site"
+- El panel de administración de ngrok está en http://localhost:4040
+
+---
+
+### Opción C — Local híbrido (MySQL + Mosquitto en Docker, el resto local)
 
 Requiere: **Docker Desktop corriendo** + .NET 8 SDK + Node.js ≥ 18 + Python 3 (`py` en Windows).
 

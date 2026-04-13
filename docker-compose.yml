@@ -69,9 +69,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # En el contenedor, el navegador del usuario llama al backend
-        # a través de la máquina host, no la red interna de Docker.
-        PUBLIC_API_URL: "http://localhost:5000"
+        # Vacío = el frontend usa rutas relativas (/api/...) y nginx hace el proxy al backend
+        PUBLIC_API_URL: ""
     container_name: trackuniversity-frontend
     restart: unless-stopped
     ports:
