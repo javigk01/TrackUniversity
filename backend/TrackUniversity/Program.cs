@@ -38,13 +38,13 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     try
     {
-        // Aplicar todas las migraciones pendientes
-        db.Database.Migrate();
-        Console.WriteLine("[DB] Migraciones aplicadas correctamente.");
+        // Crea las tablas si no existen (sin necesidad de migraciones)
+        db.Database.EnsureCreated();
+        Console.WriteLine("[DB] Esquema verificado correctamente.");
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[DB] Error aplicando migraciones: {ex.Message}");
+        Console.WriteLine($"[DB] Error creando el esquema: {ex.Message}");
     }
 
     if (!db.Routes.Any())
